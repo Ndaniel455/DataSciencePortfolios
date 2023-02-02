@@ -1,0 +1,229 @@
+---
+title: "DTSA 5301-100 NYPD Shooting Incident Data (Historic)"
+author: "Nate Daniel"
+date: "2023-01-20"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Project Step 1: Start an Rmd Document
+_Start an Rmd document that describes and imports the shooting project dataset in a reproducible manner._
+
+This project aims to conduct an analysis of shooting incidents that occurred in New York City between 2006 and the end of 2021. The focus of the analysis will be on the demographic information of both the perpetrators and victims of these incidents. Additionally, the dates of each incident will be examined to investigate any trends or patterns across years or seasons. Through this analysis, we hope to gain a better understanding of the factors that contribute to gun violence.
+
+As per the information provided on the [Data.Gov](https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic) website, this data was extracted on a quarterly basis, and thoroughly reviewed by the Office of Management Analysis and Planning, before being made available on the NYPD website.
+
+
+
+Each record in our dataset represents a shooting incident that occurred in New York City. The information provided for each incident includes:
+
+* Date and time of occurrence
+* Location-related details such as cross-streets, borough, and latitude/longitude coordinates
+* Demographic information of both the suspect and victims
+* Police precinct
+* jurisdiction code, which can be one of the following:
+
+  * 0 - Patrol
+  * 1 - Transit
+  * 2 - Housing
+  
+It's worth noting that a single shooting incident may have multiple victims, and as a result, duplicate Incident keys may be generated. However, each Incident key represents a victim, and duplicate keys should be considered as a single incident.
+
+To begin this analysis, we will need to first retrieve the data from its source the  [Data.Gov](https://catalog.data.gov/dataset/nypd-shooting-incident-data-historic) site. 
+
+```{r import_data, message = FALSE}
+## Get current data from Data.Gov site
+
+library(tidyverse)
+## URL to download csv data from Data.Gov site 
+url <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+
+## creating a variable for the shooting data
+Shooting_data <- read_csv(url)
+
+```
+
+
+## Project Step 2: Tidy and Transform Your Data
+*Add to your Rmd document a summary of the data and clean up your dataset by changing appropriate variables to factor and date types and getting rid of any columns not needed.  Show the summary of your data to be sure there is no missing data. If there is missing data, describe how you plan to handle it.*
+
+Let us examine the raw data that we have imported to gain a better understanding of its structure and content.
+```{r summary_data, echo = FALSE}
+
+## Show summary of data
+head(Shooting_data)
+
+```
+
+
+In the initial phase of our analysis, we will perform necessary data cleaning by making adjustments to appropriate variables and rectifying data types. Specifically, the following columns have been identified as having incorrect data types:
+
+- The column *OCCUR_DATE* is currently in character format but it should be converted to a date data type to ensure accurate analysis.
+
+```{r update_date, message=FALSE}
+## Load lubridate
+library(lubridate)
+
+## Change OCCUR_DATE from string to date data type
+Shooting_data <- Shooting_data %>% mutate (OCCUR_DATE = mdy(OCCUR_DATE))
+
+```
+
+
+In order to enhance clarity and ease of understanding, I propose renaming a few of the columns in our dataset:
+
+- The column *OCCUR_DATE* will be changed to *DATE*
+- The column *OCCUR_TIME* will be changed to *TIME*
+- The column *BORO* will be changed to *BOROUGH*
+- The column *STATISTICAL_MURDER_FLAG* will be changed to *MURDER_FLAG*
+
+With these modifications, the overall organization and readability of our table will be improved.
+
+```{r update_column_names}
+## Updating column names to improve legibility
+colnames(Shooting_data)[2] <- "DATE"
+colnames(Shooting_data)[3] <- "TIME"
+colnames(Shooting_data)[4] <- "BOROUGH"
+colnames(Shooting_data)[8] <- "MURDER_FLAG"
+
+```
+
+
+Upon examination of our dataset, it has been determined that there are three columns that would be beneficial to remove. The columns *X_COORD_CD* and *Y_COORD_CD* provide location data based on the New York State Plane Coordinate System, Long Island Zone, NAD 83. However, as our dataset already includes longitude and latitude data, these columns are redundant and can be removed. Additionally, there is a column *Lon_lat* that combines the latitude and longitude information, however, as this information is already present in separate columns, this column is also redundant and can be removed.
+
+```{r removing_columns}
+
+drop <- c("X_COORD_CD", "Y_COORD_CD", "Lon_Lat")
+
+Shooting_data = Shooting_data[,!(names(Shooting_data) %in% drop)]
+
+head(Shooting_data)
+
+```
+
+Upon analyzing this dataset, it's apparent that a significant number of rows contain missing data. To better understand the extent of this issue, it would be beneficial to calculate the number of rows that contain missing data for each column. To aid in this analysis, I've included a table below that displays the number of rows with missing data. The first column of the table shows the total count of rows in the dataset.
+
+```{r count_columns, echo = FALSE}
+TOTAL_ROWS <- c(sum(!is.na(Shooting_data$INCIDENT_KEY)))
+INCIDENT_KEY <- c(sum(is.na(Shooting_data$INCIDENT_KEY)))
+DATE <- c(sum(is.na(Shooting_data$DATE)))
+TIME <- c(sum(is.na(Shooting_data$TIME)))
+BOROUGH <- c(sum(is.na(Shooting_data$BOROUGH)))
+PRECINCT <- c(sum(is.na(Shooting_data$PRECINCT)))
+JURISDICTION_CODE <- c(sum(is.na(Shooting_data$JURISDICTION_CODE)))
+LOCATION_DESC <- c(sum(is.na(Shooting_data$LOCATION_DESC)))
+MURDER_FLAG <- c(sum(is.na(Shooting_data$MURDER_FLAG)))
+PERP_AGE_GROUP <- c(sum(is.na(Shooting_data$PERP_AGE_GROUP)))
+PERP_SEX <- c(sum(is.na(Shooting_data$PERP_SEX)))
+PERP_RACE <- c(sum(is.na(Shooting_data$PERP_RACE)))
+VIC_AGE_GROUP <- c(sum(is.na(Shooting_data$VIC_AGE_GROUP)))
+VIC_SEX <- c(sum(is.na(Shooting_data$VIC_SEX)))
+VIC_RACE <- c(sum(is.na(Shooting_data$VIC_RACE)))
+Latitude <- c(sum(is.na(Shooting_data$Latitude)))
+Longitude <- c(sum(is.na(Shooting_data$Longitude)))
+
+missing_data_table <- data.frame (TOTAL_ROWS, INCIDENT_KEY, DATE, TIME, BOROUGH, PRECINCT, JURISDICTION_CODE, LOCATION_DESC, MURDER_FLAG, PERP_AGE_GROUP, PERP_SEX, PERP_RACE, VIC_AGE_GROUP, VIC_SEX, VIC_RACE, Latitude, Longitude)
+
+library(knitr)
+
+kable(missing_data_table[1:7])
+kable(missing_data_table[7:11])
+kable(missing_data_table[11:17])
+```
+
+As evident from the table, the majority of the missing data pertains to the location description, which details the types of places where the incident occurred. Additionally, we are lacking information on the perpetrator's demographics, which I suspect is a result of the perpetrator evading identification by law enforcement or witnesses.
+
+It would not be an appropriate approach to remove incidents with missing data. Approximately 58% of the data in our dataset is missing location descriptions and an additional 36% of the data is missing demographic information about the perpetrator. Eliminating that much data would have a significant impact on the quality of our analysis. I believe that utilizing the data that we do have for our analysis will yield the best results. Any analysis that I conduct that includes location descriptions or perpetrator demographics will have a footnote regarding the missing data.
+
+In this data set there is a few records with bad data that we will need to remove for our analysis. First when we look at the age range of the perpetrator we see that most fall between <18 to 65+ however there are a few records with ages that don't make sense. For instance there are records that record the age to be 1020, 224, 940. We will change these to N/A values to ensure integrity of our analysis. Thankfully, we don't have this issue with the victim's age column
+
+```{r cleaning_data}
+bad_ages <- c('1020', '224', '940')
+Shooting_data$PERP_AGE_GROUP[Shooting_data$PERP_AGE_GROUP %in% bad_ages] <- NA
+
+count(Shooting_data, PERP_AGE_GROUP)
+
+```
+
+
+
+## Project Step 3: Add Visualizations and Analysis
+_Add at least two different visualizations & some analysis to your Rmd.  Does this raise additional questions that you should investigate?_
+
+Given the availability of demographic data for both perpetrators and victims, it would be insightful to analyze and compare the characteristics of the typical offender and those affected by the crime
+
+_note: 36% of the records lack demographic information about the perpetrators_
+
+```{r, AGE_GROUP, echo=FALSE}
+
+ggplot(Shooting_data, aes(x= VIC_AGE_GROUP, fill= VIC_AGE_GROUP))+ geom_bar(position = "dodge") + ggtitle("Victim's age")
+ggplot(Shooting_data, aes(x= PERP_AGE_GROUP, fill= PERP_AGE_GROUP))+ geom_bar(position = "dodge")+ ggtitle("Perpetrator's age")
+```
+
+The data depicted in these graphs reveals that the majority of shooting victims are in the age group of 18-44, with a peak in the range of 25-44. Similarly, the age range of shooting perpetrators is also primarily 18-44, with a higher concentration in the 18-24 age group. 
+
+```{r, SEX, echo=FALSE}
+
+ggplot(Shooting_data, aes(x= VIC_SEX, fill= VIC_SEX))+ geom_bar(position = "dodge") + ggtitle("Victim's sex")
+ggplot(Shooting_data, aes(x= PERP_SEX, fill= PERP_SEX))+ geom_bar(position = "dodge")+ ggtitle("Perpetrator's sex")
+```
+
+The data reveals that a majority of shooters and victims in gun violence incidents are male, indicating that young men may be disproportionately affected by gun violence. This trend could suggest that men may be more likely to have access to firearms and to use them in violent situations. However, it's crucial to note that the data we have is not enough to draw a comprehensive understanding of the underlying causes of this phenomenon. Further research is needed to fully comprehend the complex and multifaceted nature of gun violence.
+
+Factors such as societal attitudes towards masculinity, access to firearms, poverty, mental health issues, lack of education, and exposure to violence, may all play a role in the likelihood of men being involved in gun violence. It is important to gain a more in-depth understanding of these risk factors and their connection to gun violence, in order to develop effective prevention strategies. Therefore, it would be beneficial to gather additional data and conduct more research in order to better comprehend the underlying causes and potential solutions to this issue. 
+
+### Time Series Model
+I will utilize a Time Series Model to examine patterns and trends over a period of time, specifically across years and seasons. This approach will provide valuable insights into the evolution of shooting incidents and any possible variations over time. 
+
+```{r creating_time_model, echo=FALSE, message=FALSE}
+Shooting_data$DATE <- as.Date(Shooting_data$DATE, "%Y-%m-%d")
+Shooting_data$INCIDENT_KEY <- as.character(Shooting_data$INCIDENT_KEY)
+
+Shooting_data <- Shooting_data[!is.na(Shooting_data$DATE),]
+
+
+incidents_by_date <- Shooting_data %>%
+  group_by(DATE, INCIDENT_KEY) %>%
+  summarize(count = n()) %>%
+  group_by(DATE) %>%
+  summarize(count = sum(count))
+
+
+shooting_ts <- ts(incidents_by_date$count, frequency = 365.25)
+
+#shootings_decomposed <- decompose(shooting_ts)
+
+##data_ts <- data.frame(date=date(shooting_ts), shootings=shooting_ts)
+
+##data_ts$date <- as.Date(data_ts$date)
+
+
+ggplot(incidents_by_date, aes(x=DATE, y=count)) +
+    geom_line() +
+    scale_x_date(date_breaks = "1 year", date_labels = "%b %Y") +
+    scale_y_continuous(limits = c(0, max(incidents_by_date$count))) +
+    xlab("Date") +
+    ylab("Number of shootings") +
+    ggtitle("Shootings in NYC")+
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    ##theme(plot.margin = margin(1,1,1.5,1.2, "cm"))
+
+
+
+```
+
+As evident by the graph, the data exhibits a pattern of peaks in the middle of each year, suggesting a higher frequency of shootings occur during late spring to early fall. Conversely, the winter months present the lowest number of incidents. This seasonal variation could be influenced by various factors. One possibility is that shootings may be less likely to occur or be reported during adverse weather conditions. To further investigate this correlation, we could conduct an analysis which assigns a numerical value to each day or week based on weather conditions, and examine the relationship between weather and number of shooting incidents. 
+
+## Project Step 4: Add Bias Identification
+_Write the conclusion to your project report and include any possible sources of bias.  Be sure to identify what your personal bias might be and how you have mitigated that._
+
+The analysis of the data suggests that young males between the ages of 18-44 are disproportionately impacted by gun violence, both as victims and perpetrators. This trend may be influenced by a complex interplay of various factors, such as access to firearms, poverty, mental health issues, lack of education, exposure to violence, and societal attitudes towards masculinity. Further research is needed to fully understand the underlying causes of this phenomenon.
+
+Additionally, the data has also shown a correlation between the time of year and the number of shooting incidents. We hypothesized that this may be related to the weather. New York City experiences a range of seasonal conditions, from warm and humid summers to blizzards in the winter. If there is a correlation between weather and the number of shooting incidents, this could lead to more efficient deployment of law enforcement resources.
+
+It is important to acknowledge that there are potential sources of bias present in the data. One such source is the fact that the data is collected by law enforcement agencies, which have been known to exhibit bias in their interactions with the public and in the deployment of resources. This bias can manifest in a number of ways, including a disproportionate allocation of resources to lower-income and more diverse communities. This could result in underreporting of incidents in more affluent, educated, and white areas, leading to an incomplete understanding of the scope of the problem. Victims may be unwilling to cooperate with law enforcement if they don't feel understood or supported by law enforcement resulting in a lower number of perpetrator's demographic information being recorded.
+
+As a researcher, it is important to acknowledge personal biases that may influence my analysis. In this case, being a gun owner who primarily uses firearms for target practice and self-defense, this has impacted my perspective on when and how guns are used. This perspective may result in a greater focus on prevention rather than deterrence. I also don't live in New York City, and I am not familiar with its people or culture. I have refrained from making prescriptive recommendations for this reason. I believe that the most effective way of encouraging change in a community is to involve the people in that community.
+
+The data has revealed some interesting insights into who is affected by gun violence and that number of shooting incidents appear to be related to seasons. With additional data and analysis, I believe that a more clear picture of the problem could be produced, and potential recommendations could be made. Gun violence is an important issue, and many factors play a role in each incident. However, it's important to remember that gun violence is a learned behavior, and effective preventive measures can be put in place to reduce its occurrences.
