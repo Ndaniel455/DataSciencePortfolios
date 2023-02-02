@@ -1,0 +1,325 @@
+---
+title: "DTSA_5301-100_Final_Project_2:Reproducible_Report_on_COVID19_Data"
+author: "Nate Daniel"
+date: "2023-01-28"
+output: html_document
+---
+## Step 1 - Identify and import the data
+
+We aim to gain valuable insights into the correlation between Covid-19 cases and deaths and the vaccination rates in various states by conducting a comprehensive analysis of data obtained from John Hopkins University and the CDC (Center for Disease Control and Prevention).
+
+### Question of Interest
+
+How have the rates of cases and deaths from Covid-19 changed across time? Are vaccination rates an accurate predictor of Covid-19 cases and deaths?
+
+### Description of the Data
+
+The data on Covid-19 deaths and cases is separated into two distinct files that we will need to download. The information is organized by county and date, and provides a tally of the total number of recorded cases and deaths in each county. Even if there were no reported cases or deaths on a specific day, each county is still represented in the dataset. You can access the cases dataset [here](https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv) and the deaths dataset [here](https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv).
+
+The vaccination information is organized by county, allowing us to merge it with the cases and deaths data. By using the state, county and date identifiers, we will be able to link the vaccination data to the relevant records in the cases and deaths datasets. You can obtain the vaccination dataset by visiting the CDC's website, available [here](https://data.cdc.gov/api/views/8xkx-amqh/rows.csv?accessType=DOWNLOAD)
+
+
+We'll start by importing the data into R and taking a look at the structure and content of the datasets.
+
+```{r get_jhu_data, message=FALSE}
+## We will need tidyverse
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+
+## Get Current Data in the four files
+## They all begin the same way
+
+url_in <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+## These are the four files that we need
+file_names <- 
+  c("time_series_covid19_confirmed_US.csv",
+    "time_series_covid19_deaths_US.csv")
+
+## appending files to url_in variable
+urls <- str_c(url_in,file_names)
+
+## Reading in the files from  the URLs we have created
+US_cases <- read_csv(urls[1])
+US_deaths <- read_csv(urls[2])
+```
+
+The next step is to obtain the vaccination data from the Centers for Disease Control and Prevention (CDC).
+
+```{r import_CDC_data_NOTE:THIS_WILL_TAKE_A_FEW_MINUTES}
+## Note this will take a while. There is a LOT of data in this file. 
+URL_V <- 'https://data.cdc.gov/api/views/8xkx-amqh/rows.csv?accessType=DOWNLOAD'
+
+vax_raw <- read_csv(URL_V)
+
+```
+
+
+## Project Step 2: Tidy and Transform Your Data
+
+To effectively analyze the data, it's important to arrange the datasets into a tidy format. This involves separating each variable, such as date, cases, and deaths, into their own column and discarding unnecessary information, like Latitude and Longitude. By doing this, we can create a cleaner and more organized data set that is easier to work with.
+
+```{r tidy_US_data}
+## we will use pivot_longer to move values from the columns to rows of our dataset 
+
+US_cases <- US_cases %>% 
+  pivot_longer(cols=-(UID:Combined_Key),
+                          names_to = "date",
+                          values_to = "cases") %>%
+  select(Admin2:cases) %>%
+  mutate(date = mdy(date)) %>%
+  select(-c(Lat, Long_))
+
+
+US_deaths <- US_deaths %>% 
+  pivot_longer(cols= -(UID:Population),
+                names_to = "date",
+                values_to = "deaths") %>%
+  select(Admin2:deaths) %>%
+  mutate(date = mdy(date)) %>%
+  select(-c(Lat, Long_))
+
+```
+
+To continue our analysis, we will merge the two files, "US_cases" and "US_deaths", into a single variable, named "US". Additionally, the "US_deaths" dataset contains a column labeled "population," which we want to keep in our analysis. This will give us a comprehensive view of the data and help us make more informed decisions.
+
+```{r combine_US}
+## Joining global_cases and global_deaths into one file called global
+US <- US_cases %>%
+      full_join(US_deaths)
+```
+
+By examining the summary statistics, we can also identify any potential issues with the data that may impact our analysis. 
+
+```{r summary}
+summary(US)
+```
+
+We need to make sure that our dataset contains only meaningful information. As a result, it is necessary to remove any rows that do not have any recorded cases or deaths of Covid-19.
+
+```{r removing_rows_W/O_data}
+## removing rows without at least 1 case or death
+US <- US %>% filter(cases + deaths > 0)
+
+summary(US)
+```
+
+To further refine our data, we will only keep the relevant columns such as "Date", "Recip_County", "Recip_State", and "Administered_Dose1_Recip". These columns contain all the information we need for our analysis. To make the data more manageable, I will also be renaming a few columns for better clarity and to make our analysis easier.
+
+```{r tidy_vax_data}
+vax_data <- vax_raw[c(1,4,5,7)]
+
+vax_data <- vax_data %>% mutate (Date = mdy(Date))
+
+vax_data <- rename(vax_data, date = Date)
+
+vax_data <- rename(vax_data, vaccinated = Administered_Dose1_Recip)
+
+```
+
+The next step would be to join the two datasets (vaccination data and US data with cases and deaths) based on a common identifier. To do that, we need to create a "Combined_Key" column, which will serve as a unique identifier for each state in both datasets. For this purpose, I would download another CSV file that has both the full state names and their abbreviations. This data can then be joined with the vaccination data and used to match the records in both datasets by state and county.
+
+```{r download_state_data}
+
+vax_data$Recip_County <- gsub(" County", "", vax_data$Recip_County)
+
+States_url <- "http://goodcsv.com/wp-content/uploads/2020/08/us-states-territories.csv"
+
+states_data <- read_csv(States_url)
+
+states_data <- states_data[c(2,3)]
+
+vax_data <- full_join(vax_data, states_data, 
+                         by = c("Recip_State" = "Abbreviation"))
+```
+
+We will create a new variable called Combined_Key, which will be used to join the vaccination data with the US data set containing cases and deaths information. The Combined_Key will serve as a unique identifier for each county and state, allowing us to combine the data and analyze the relationship between vaccinations and Covid-19 cases and deaths. This step is crucial in ensuring that the correct data is paired with the correct location.
+
+```{r create_US_covid}
+vax_data$Combined_Key <- paste(vax_data$Recip_County, 
+                                  vax_data$Name,
+                                  sep = ", ")
+
+vax_data$Combined_Key <- paste(vax_data$Combined_Key,
+                                  ", US",
+                                  sep= "")
+vax_data <- vax_data[c(1,4,6)]
+
+US_covid <- left_join(US, vax_data, by = c("Combined_Key", "date"))
+```
+
+To ensure the validity of our results, it is crucial to clean our data by removing any columns with missing vaccinated data, represented by "NA". Keeping "NA" in the data during analysis could lead to inaccuracies, as it is not possible to perform aggregations with missing values present. By only including data with complete information, we can ensure the reliability of our analysis.
+
+``` {r fill_data_removing_NA}
+US_covid <- US_covid %>%
+  group_by(Admin2) %>%
+  fill(vaccinated, .direction = "up") %>%
+  ungroup()
+
+US_covid <- US_covid[!is.na(US_covid$vaccinated),]
+```
+
+To make the analysis more manageable, we need to aggregate the data by state, rather than by county. This will reduce the number of rows in the dataset, allowing us to draw more meaningful conclusions from the data.
+
+``` {r create_US_by_state}
+US_by_state <- US_covid %>%
+  group_by(Province_State, Country_Region, date) %>%
+  summarize(cases = sum(cases), deaths = sum(deaths), 
+            vaccinated = sum(vaccinated),
+            Population = sum(Population)) %>%
+  select(Province_State, Country_Region, date, cases,
+         deaths, vaccinated, Population) %>%
+  ungroup()
+
+US_by_state <- US_by_state %>% filter(cases + deaths + vaccinated > 0)
+```
+
+let's summarize this data at a national level, to give us a comprehensive overview of the situation in the United States as a whole.
+
+```{r create_US_totals}
+US_totals <- US_by_state %>%
+  group_by(Country_Region, date) %>%
+  summarize(cases = sum(cases), deaths = sum(deaths),
+            Population = sum(Population),
+            vaccinated = sum(vaccinated)) %>%
+  select(Country_Region, date, cases, deaths, vaccinated,
+         Population) %>%
+  ungroup()
+```
+
+It would be valuable to remove the data from 2023 in order to obtain a clearer and more accurate analysis. 
+
+``` {r trimming_2023}
+US_totals <- US_totals %>% filter(date < as.Date("2023-01-01"))
+US_by_state <- US_by_state %>% filter(date < as.Date("2023-01-01"))
+
+```
+
+
+## Project Step 3: Add Visualizations and Analysis
+
+This plot of US_totals provides a visual representation of the Covid-19 situation in the US. By utilizing a log10 scale, the graph highlights the progression of the vaccine distribution and Covid-19 cases. As seen on the graph, the first Covid-19 vaccination was administered in December 2020, which is in line with news reports. The plot also reveals that the majority of individuals in the US received their first vaccine dose before the end of 2022 and the number of vaccinations surpasses the number of infections.
+
+```{r US_totals_plot, message= FALSE, warning = FALSE}
+US_totals %>% 
+  filter(cases > 0) %>%
+  ggplot(aes(x = date, y = cases)) +
+  geom_line(aes(color = "cases")) +
+  geom_point(aes(color = "cases")) +
+  geom_line(aes(y = deaths, color = "deaths")) +
+  geom_point(aes(y = deaths, color = "deaths")) +
+  geom_line(aes(y = vaccinated, color = "vaccinated")) +
+  geom_point(aes(y = vaccinated, color = "vaccinated")) +
+  scale_y_log10() +
+  theme(legend.position = "bottom") +
+  labs(title = "COVID19 in US", y = NULL)
+```
+
+It's interesting to observe Colorado's Covid-19 situation. The graph displays a sharp increase in vaccinations at the start of 2021, however, it appears that the pace of vaccinations was slower compared to the rest of the US before leveling off around mid-2021.
+
+``` {r CO_plot, message= FALSE, warning = FALSE}
+state <- "Colorado"
+
+US_by_state %>%
+  filter(Province_State == state) %>%
+  filter(cases > 0) %>%
+  ggplot(aes(x = date, y = cases)) +
+  geom_line(aes(color = "cases")) +
+  geom_point(aes(color = "cases")) +
+  geom_line(aes(y = deaths, color = "deaths")) +
+  geom_point(aes(y = deaths, color = "deaths")) +
+  geom_line(aes(y = vaccinated, color = "vaccinated")) +
+  geom_point(aes(y = vaccinated, color = "vaccinated")) +
+  scale_y_log10() +
+  theme(legend.position = "bottom") +
+  labs(title = str_c("COVID19 in ", state), y = NULL)
+```
+
+### Project Step 4: Add Model and Analysis
+
+For the final part of my project, I will analyze the relationship between the number of vaccinations and the number of Covid cases and deaths in each state. My hypothesis is that states with higher vaccination rates will have a lower number of cases and deaths.
+
+To carry out this analysis, I will use a linear model to make predictions about the number of cases and deaths in each state based on vaccination rates. I will begin by cleaning and preprocessing the data to only include information after the vaccine was available. This will be done by filtering the data to only include rows where there is more than one vaccinated person in that state.
+
+Once the data has been cleaned, I will summarize the data for each state into its own row. This will allow me to use the number of vaccinations as a predictor of the number of cases and deaths in each state.
+
+```{r create_deaths_prediction}
+
+US_by_state <- US_by_state %>% filter(vaccinated > 0)
+
+US_state_totals <- US_by_state %>%
+  group_by(Province_State) %>%
+  summarize(deaths = max(deaths), cases = max(cases), 
+            population = max(Population),
+            vaccinated = max(vaccinated),
+            cases_per_thou = 1000 * cases / population,
+            deaths_per_thou = 1000 * deaths / population,
+            vaccinated_per_thou = 1000 * vaccinated / population) %>%
+  filter(cases > 0, population > 0)
+
+mod <- lm(deaths_per_thou ~ vaccinated_per_thou, data = US_state_totals)
+
+US_tot_w_pred <- US_state_totals %>% mutate(pred_deaths = predict(mod))
+
+#US_tot_w_pred <- US_tot_w_pred %>% filter(vaccinated > 0)
+
+US_tot_w_pred %>% ggplot() +
+  geom_point(aes(x= vaccinated_per_thou, y = deaths_per_thou), color = 'blue')+
+  geom_point(aes(x = vaccinated_per_thou, y = pred_deaths), color = "red") +
+  labs(title = "Predicting Deaths from Vaccination Rates",
+       x = "Vaccinated Per Thousand", y = "Deaths Per Thousand")
+```
+
+Despite my initial expectations, this graph depicts a surprising outcome. I had anticipated a stronger association between the level of vaccination and the number of Covid-related fatalities in each state. However, the data suggests that the number of vaccinations is not an accurate indicator of the number of deaths caused by Covid-19 in a particular state.
+
+Let's delve deeper and investigate the correlation between the number of vaccinations and the number of Covid cases. Perhaps this data will provide a clearer understanding of the relationship between these two variables.
+
+``` {r create_cases_prediction}
+mod2 <- lm(cases_per_thou ~ vaccinated_per_thou, data = US_state_totals)
+
+US_tot_w_pred <- US_state_totals %>% mutate(pred_cases = predict(mod2))
+
+US_tot_w_pred %>% ggplot() +
+  geom_point(aes(x= vaccinated_per_thou, y = cases_per_thou), color = 'blue')+
+  geom_point(aes(x = vaccinated_per_thou, y = pred_cases), color = "red") +
+  labs(title = "Predicting Cases from Vaccination Rates",
+       x = "Vaccinated Per Thousand", y = "cases Per Thousand")
+
+```
+
+While vaccination rates do play a role in curbing the spread of COVID-19, this graph highlights that there are a multitude of other factors at play when it comes to predicting the number of cases in a state. The correlation between vaccination rates and cases appears to be weak, suggesting that other factors may also have significant impact.
+
+These findings highlight the complexity of predicting the impact of Covid-19, as there are numerous factors beyond vaccination rates that come into play. These factors include population density, age distribution, testing capacity, lockdown measures, travel restrictions, and more. It's important to acknowledge that each state's unique combination of these variables can greatly affect the outcome of the pandemic.
+
+Vaccination is deemed as the most effective way to protect individuals from Covid-19. The global pandemic has affected over 90 million people and resulted in 974,000 deaths in the United States alone, making it clear that Covid-19 is a serious and life-threatening illness. By getting vaccinated, we can help to prevent the spread of the disease and protect our communities.
+
+## Project Step 5: Identify Bias
+
+The data we have collected for our analysis may have sources of bias. To mitigate these biases, we have chosen reputable sources such as John Hopkins University and the CDC. However, it's crucial to understand that all data has the potential for bias. The Covid-19 pandemic had a strong political aspect, increasing the likelihood of inherent biases in our data.
+
+A significant source of bias could also stem from individuals choosing not to get tested for Covid-19. I personally know individuals who did not get tested despite suspecting they had contracted the virus. This can lead to an underreporting of cases in our data, as a case can only be counted as Covid-19 if it is linked to a positive test result. Furthermore, testing accuracy is not 100%, as tests can result in false positives or negatives, further impacting the validity of our data.
+
+I have some personal biases that I acknowledge. I personally made the choice to receive the vaccine and have a strong belief in its efficacy in controlling the spread of Covid-19. I initially sought to include the vaccine data in my analysis to support my position, however, my preliminary analysis did not reveal any clear evidence to support my hypothesis. However, with further time and advanced technical skills, I am confident that a more in-depth analysis could be performed to establish a stronger connection between vaccination rates and cases/deaths.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
