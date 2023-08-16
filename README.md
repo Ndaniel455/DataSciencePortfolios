@@ -39,7 +39,7 @@ Hello! I'm Nathan Daniel, a recent Data Science Master's graduate with a passion
 
 ## Projects
 
-GitHub Repository: [Data Science Portfolios](https://github.com/Ndaniel455/DataSciencePortfolios/tree/main)
+GitHub Repository: [Data Science Portfolios](https://github.com/Ndaniel455/DataSciencePortfolios/tree/main/Machine_Learning)
 
 ### [Mall Customer Segmentation](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Mall_Customer_Segmentationt.ipynb)
 
