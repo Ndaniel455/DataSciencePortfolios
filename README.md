@@ -9,7 +9,7 @@ Hello! I'm Nathan Daniel, a recent Data Science Master's graduate with a passion
 - Email: ndaniel.455@gmail.com
 - Phone: (719) 684-6772
 - GitHub: [Ndaniel455](https://github.com/Ndaniel455)
-- LinkedIn: [Your LinkedIn Profile](https://www.linkedin.com/in/your-profile/)
+- LinkedIn: [Nathan Daniel](https://www.linkedin.com/in/nathan-daniel-b96363105/)
 
 ## Experience
 
