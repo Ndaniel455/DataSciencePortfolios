@@ -34,8 +34,10 @@ Hello! I'm Nathan Daniel, a recent Data Science Master's graduate with a passion
 
 ## Education
 
-- Master of Science in Data Science - Colorado University Boulder, Boulder, CO (2022 - 2023)
-- Bachelor of Science in Entrepreneurial Studies - Grand Canyon University, Phoenix, AZ (2015 - 2018)
+**Master of Science in Data Science**
+- Colorado University Boulder, Boulder, CO (2022 - 2023)
+**Bachelor of Science in Entrepreneurial Studies**
+- Grand Canyon University, Phoenix, AZ (2015 - 2018)
 
 ## Projects
 
