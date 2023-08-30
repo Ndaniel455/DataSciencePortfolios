@@ -44,37 +44,28 @@ Hello! I'm Nathan Daniel, a recent Data Science Master's graduate with a passion
 
 GitHub Repository: [Data Science Portfolios](https://github.com/Ndaniel455/DataSciencePortfolios/tree/main/Machine_Learning)
 
-### [Mall Customer Segmentation](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Mall_Customer_Segmentationt.ipynb)
+### Supervised Learning
+- [Categorization Comparison](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Categorization_Comparison.ipynb)
+   - Evaluated the performance of Gradient Boosting, Logistic Regression, and Naive Bayes classifiers in binary data classification scenarios.
+- [Supervised Text Classification for Marketing Analytics](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Supervised_Text_Classification_for_Marketing_Analytics.ipynb)
+   - Created a deep learning algorithm using k-train to predict the probability of health and wellness topics in news stories.
 
-Utilized KMeans Clustering and Hierarchical Clustering to segment mall customers for targeted marketing strategies.
+### Unsupervised Learning
+- [Mall Customer Segmentation](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Mall_Customer_Segmentationt.ipynb)
+   - Utilized K-Means Clustering and Hierarchical Clustering to segment mall customers for targeted marketing strategies.
 
-### [Categorization Comparison](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Categorization_Comparison.ipynb)
+### Deep Learning
+- [Cancer Detection - CNN](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Cancer_Detection_CNN.ipynb)
+   - Developed a Convolutional Neural Network (CNN) model to detect cancer in medical images, contributing to medical diagnostics.
+- [Disaster Tweets Analysis](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Disaster_Tweets_Analysis.ipynb)
+   - Employed LSTM and GRU models to classify disaster-related tweets for efficient response during emergencies.
+- [Text Generation with LSTM](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Text_Generation_with_LSTM.ipynb)
+   - Implemented Character-Level Text Generation using Long Short-Term Memory (LSTM), inspired by Nietzsche's work.
+- [BBC News Classification](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/BBC_News_Classification.ipynb)
+   - Developed an accurate classification system using Logistic Regression TF-IDF for categorizing news articles into business, entertainment, politics, sport, and tech categories.
+- [Monet-Style Image Generation using CycleGAN](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Monet_Style_Image_Generation_using_CycleGAN.ipynb)
+   - Explored the CycleGAN framework to generate Monet-style images, transforming photographs into Monet-esque paintings.
 
-Evaluated the performance of Gradient Boosting, Logistic Regression, and Naive Bayes classifiers in binary data classification scenarios.
-
-### [Cancer Detection - CNN](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Cancer_Detection_CNN.ipynb)
-
-Developed a Convolutional Neural Network (CNN) model to detect cancer in medical images, contributing to medical diagnostics.
-
-### [Disaster Tweets Analysis](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Disaster_Tweets_Analysis.ipynb)
-
-Employed LSTM and GRU models to classify disaster-related tweets for efficient response during emergencies.
-
-### [Text Generation with LSTM](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Text_Generation_with_LSTM.ipynb)
-
-Implemented Character-Level Text Generation using Long Short-Term Memory (LSTM), inspired by Nietzsche's work.
-
-### [Supervised Text Classification for Marketing Analytics](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Supervised_Text_Classification_for_Marketing_Analytics.ipynb)
-
-Created a deep learning algorithm using k-train to predict the probability of health and wellness topics in news stories for client Chrishare.
-
-### [BBC News Classification](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/BBC_News_Classification.ipynb)
-
-Developed an accurate classification system using Logistic Regression TF-IDF for categorizing news articles into business, entertainment, politics, sport, and tech categories.
-
-### [Monet-Style Image Generation using CycleGAN](https://github.com/Ndaniel455/DataSciencePortfolios/blob/main/Machine_Learning/Monet_Style_Image_Generation_using_CycleGAN.ipynb)
-
-Explored the CycleGAN framework to generate Monet-style images, transforming photographs into Monet-esque paintings.
 
 ## Let's Connect
 
